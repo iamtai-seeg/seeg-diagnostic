@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI 네이티브 조직 성숙도 진단 | SEEG</title>
+<style>
+  :root{
+    --navy:#1F4E79; --navy2:#2E6CA4; --bg:#f5f7fa; --card:#fff;
+    --line:#e3e8ef; --ink:#1a2432; --muted:#6b7684; --accent:#e8873a; --good:#2f9e6f;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",Arial,sans-serif;
+    background:var(--bg);color:var(--ink);line-height:1.6}
+  .wrap{max-width:860px;margin:0 auto;padding:0 20px 80px}
+  header{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:44px 20px 40px;text-align:center}
+  header h1{margin:0 0 8px;font-size:26px;letter-spacing:-.5px}
+  header p{margin:0;opacity:.85;font-size:14px}
+  .badge{display:inline-block;margin-bottom:14px;font-size:12px;background:rgba(255,255,255,.16);
+    padding:4px 12px;border-radius:20px;letter-spacing:.5px}
+  .intro{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin:26px 0;font-size:14px}
+  .intro b{color:var(--navy)}
+  .scale-legend{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;font-size:12px;color:var(--muted)}
+  .scale-legend span{background:#eef2f7;padding:3px 10px;border-radius:6px}
+  .field-group{margin-top:18px;border-top:1px solid var(--line);padding-top:16px}
+  .field-group label.field-label{display:block;font-size:13px;font-weight:700;color:var(--navy);margin-bottom:6px}
+  .field-group input[type=email]{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font-size:14px}
+  .field-group input[type=email].invalid{border-color:#d64545}
+  .consent{margin-top:14px;font-size:12px;color:var(--muted);background:#f7f9fc;border-radius:8px;padding:12px 14px}
+  .consent label{display:flex;align-items:flex-start;gap:8px;cursor:pointer}
+  .consent input[type=checkbox]{margin-top:3px;flex:none}
+  .dim{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:8px 24px 20px;margin:18px 0;
+    box-shadow:0 1px 3px rgba(20,40,80,.04)}
+  .dim h2{font-size:16px;color:var(--navy);border-bottom:2px solid #eef2f7;padding-bottom:10px;margin:18px 0 6px}
+  .dim h2 small{color:var(--muted);font-weight:400;font-size:12px;margin-left:6px}
+  .q{padding:14px 0;border-bottom:1px dashed #eef2f7}
+  .q:last-child{border-bottom:none}
+  .q .txt{font-size:14px;margin-bottom:10px}
+  .q .code{color:var(--accent);font-weight:700;font-size:12px;margin-right:6px}
+  .opts{display:flex;gap:6px;flex-wrap:wrap}
+  .opts label{flex:1;min-width:88px;text-align:center;font-size:12px;border:1px solid var(--line);
+    border-radius:8px;padding:8px 4px;cursor:pointer;transition:.12s;background:#fbfcfe;color:var(--muted)}
+  .opts input{display:none}
+  .opts input:checked + span{color:#fff}
+  .opts label:has(input:checked){background:var(--navy);border-color:var(--navy);color:#fff}
+  .opts b{display:block;font-size:15px;color:inherit}
+  .bar{position:sticky;bottom:0;background:rgba(255,255,255,.94);backdrop-filter:blur(6px);
+    border-top:1px solid var(--line);padding:14px 20px;text-align:center}
+  .bar .prog{font-size:13px;color:var(--muted);margin-bottom:8px}
+  button.cta{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:13px 34px;
+    font-size:15px;font-weight:700;cursor:pointer}
+  button.cta:disabled{background:#c9d1dc;cursor:not-allowed}
+  #nocode{display:none;text-align:center;padding:60px 20px;color:var(--muted)}
+  #nocode h2{color:var(--navy);margin:0 0 10px}
+  #done{display:none;text-align:center;padding:60px 20px}
+  #done .check{font-size:48px;margin-bottom:12px;color:var(--good)}
+  #done h2{color:var(--navy);margin:0 0 10px}
+  #err{display:none;background:#fdecea;color:#b3261e;border:1px solid #f5c2c0;border-radius:10px;
+    padding:12px 16px;margin:16px 0;font-size:13px;text-align:center}
+  .note{font-size:11px;color:var(--muted);text-align:center;margin-top:30px}
+</style>
+</head>
+<body>
+<header>
+  <div class="badge">SEEG · 소프트웨어공학엑스퍼트그룹</div>
+  <h1>AI 네이티브 조직 성숙도 진단</h1>
+  <p>우리 개발조직은 AI 네이티브로 얼마나 성숙했을까? · 35문항 · 약 7분</p>
+</header>
+
+<div class="wrap">
+
+  <div id="nocode">
+    <h2>유효한 초대링크로 접속해 주세요</h2>
+    <p>이 진단은 SEEG가 발급한 회사별 초대코드로만 응답할 수 있습니다.<br>
+       초대링크를 다시 확인하시거나 담당자에게 문의해 주세요.</p>
+  </div>
+
+  <div id="survey">
+    <div class="intro">
+      이 진단은 <b>“코드를 잘 짜는가”</b>가 아니라
+      <b>“조직이 자신의 판단을 데이터로 남기고, 패턴으로 세우고, 에이전트에 위임하되 그 한계를 아는가”</b>를
+      L3~L7로 측정합니다.
+      <div class="scale-legend">
+        <span>1 전혀 아니다</span><span>2 거의 아니다</span><span>3 보통</span>
+        <span>4 대체로 그렇다</span><span>5 매우 그렇다</span>
+      </div>
+      <div style="margin-top:10px;font-size:12px;color:var(--muted)">
+        ※ 증거(문서·로그·회의체)가 없으면 3점 이상을 주지 마세요. 최근 3개월 실제 기준으로 응답합니다.
+      </div>
+      <div class="field-group">
+        <label class="field-label" for="email">이메일 <span style="color:var(--accent)">*</span></label>
+        <input type="email" id="email" placeholder="you@company.com" autocomplete="email" oninput="upd()">
+      </div>
+      <div class="consent">
+        <label>
+          <input type="checkbox" id="agree" onchange="upd()">
+          <span>[필수] 본 진단 응답과 이메일은 SEEG의 조직 성숙도 진단·상담 목적에 한해 수집·이용되며, SEEG 외부에 제공되지 않습니다. 수집 항목: 이메일, 진단 응답. 동의합니다</span>
+        </label>
+      </div>
+    </div>
+    <div id="questions"></div>
+  </div>
+
+  <div id="done">
+    <div class="check">✓</div>
+    <h2>응답이 접수되었습니다. 감사합니다.</h2>
+    <p style="color:var(--muted)">소중한 응답 감사드립니다. 결과는 SEEG가 분석하여 별도로 안내드립니다.</p>
+  </div>
+
+  <div id="err"></div>
+
+  <div class="note">AI Native Organization Maturity Diagnostic v1.0 · 근거: AI_Native_Engineer_Framework(L3~L7)<br>
+    응답은 SEEG의 조직 성숙도 진단·상담 목적에 한해 사용됩니다.</div>
+</div>
+
+<div class="bar" id="bar">
+  <div class="prog"><span id="progNum">0</span> / 35 문항 응답</div>
+  <button class="cta" id="submitBtn" disabled onclick="submit()">제출</button>
+</div>
+
+<script>
+// 수집 전용: 이메일 형식 검증만 필요 (채점은 백엔드 구글시트에서 수행)
+const Diagnostic = { isValidEmail: function(s){ return typeof s==="string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s); } };
+
+// ---- survey (collect-only, no results shown) ----
+const DIMS = [
+ {code:"D1",name:"판단데이터 축적",sub:"의사결정의 상황·판단·근거·결과를 기록하는가",
+  q:["주요 의사결정을 '상황·판단·근거·결과' 형식으로 기록으로 남긴다",
+     "판단 기록에 '왜 그렇게 판단했는가'(근거)가 빠지지 않고 명시된다",
+     "판단 기록이 개인 노트가 아니라 팀·조직이 공유·검색하는 저장소에 쌓인다",
+     "같은 상황에 팀원 간 일관된 판단이 나오며, 불일치는 기록으로 조정된다",
+     "판단 데이터의 누적량과 품질(4요소 충족률)을 주기적으로 점검한다"]},
+ {code:"D2",name:"패턴화·표준화",sub:"판단이 재사용 가능한 기준으로 정착됐는가",
+  q:["반복되는 판단에서 패턴을 발견해 언어화한다",
+     "발견한 패턴이 팀이 따를 판단 기준(임계치·규칙)으로 문서화돼 있다",
+     "판단 기준 문서가 신입도 보고 스스로 판단할 만큼 구체적이다",
+     "판단 기준이 개인 것이 아니라 팀 공용 표준으로 합의·공유된다",
+     "판단 기준 문서가 버전 관리되고 실제 사용·개정된다(사문서 아님)"]},
+ {code:"D3",name:"에이전트화",sub:"판단·업무를 에이전트로 설계·검증하는가",
+  q:["업무에 AI 에이전트를 설계·구축·운영한다(단발 프롬프트를 넘어)",
+     "여러 에이전트가 협업하는 워크플로우(데이터 교환·역할 분담)를 운영한다",
+     "축적된 판단 데이터를 학습시킨 '판단 에이전트'를 설계·시도한 경험이 있다",
+     "판단 에이전트의 정확도를 평가하고 '언제 작동/실패'를 정의할 수 있다",
+     "에이전트가 인간 판단을 대체할 영역과 아닌 영역을 구분해 배치한다"]},
+ {code:"D4",name:"도구·인프라",sub:"파이프라인·평가·데이터 인프라가 갖춰졌는가",
+  q:["프롬프트·에이전트를 형상관리(버전·리뷰·롤백)하는 체계가 있다",
+     "에이전트 산출물의 품질을 자동 평가(테스트·eval·회귀)하는 파이프라인이 있다",
+     "판단 데이터·로그가 재사용 가능한 형태(구조화·태깅)로 수집·저장된다",
+     "도메인 지식·판단 기준을 에이전트가 참조할 지식베이스/RAG 인프라가 있다",
+     "도구·인프라가 개인 세팅이 아니라 팀 공용 표준으로 제공된다"]},
+ {code:"D5",name:"조직·역할",sub:"AI 네이티브 역할·독립도·교육 체계가 있는가",
+  q:["AI 네이티브 엔지니어 역할(에이전트 설계·판단 검증)이 직무로 정의돼 있다",
+     "엔지니어의 의사결정 독립도가 높다(일상 판단은 자율)",
+     "판단 체계·에이전트 운영을 가르치는 교육·온보딩 체계가 있다",
+     "AI 네이티브 역량이 평가·승진 기준에 반영된다",
+     "경영진이 AI 네이티브 방향을 상담할 내부 권위자가 존재한다"]},
+ {code:"D6",name:"거버넌스·탈출조건",sub:"자동화 범위·한계·책임을 규율하는가",
+  q:["'이 업무의 에이전트화는 여기서 멈춘다'는 탈출 조건을 명시적으로 판단한다",
+     "가치 판단·기본 틀 설정은 인간의 몫으로 남긴다는 원칙이 공유돼 있다",
+     "에이전트 판단의 실패를 조직 학습 자산으로 회수하는 리뷰 절차가 있다",
+     "AI 사용의 리스크·책임·검증 책임 소재에 대한 거버넌스 규칙이 있다",
+     "AI 사용의 윤리·신뢰 원칙(설명가능성·편향·투명성)을 문서화·준수한다"]},
+ {code:"D7",name:"도메인 확대·전이",sub:"판단 체계가 여러 도메인으로 확장·보편화됐는가",
+  q:["AI 판단 체계·에이전트가 둘 이상의 서로 다른 도메인에 적용된다",
+     "도메인마다 판단 기준이 어떻게 다른지 구분해 각각 관리한다",
+     "한 도메인에서 정립한 판단 체계를 다른 도메인으로 이식·확장한 경험이 있다",
+     "여러 도메인을 가로지르는 메타패턴을 발견해 활용한다",
+     "보편 판단 원칙과 도메인 특수 기준을 분리해 체계화하고 조직이 따른다"]},
+];
+
+// deploy-time: replace with the actual Apps Script Web App URL
+const ENDPOINT = "https://script.google.com/macros/s/AKfycbzL-3SP87_ljbtRBTekSUrpIz1xTK_rNSM0xKycRCOxK0Nith8c9wPme-LzuHPralcP/exec";
+
+const params = new URLSearchParams(location.search);
+const CODE = params.get("c") || "";
+if(!CODE){
+  document.getElementById("survey").style.display="none";
+  document.getElementById("nocode").style.display="block";
+  document.getElementById("bar").style.display="none";
+}
+
+// render questions
+const qc=document.getElementById("questions"); let idx=0;
+DIMS.forEach((d,di)=>{
+  const sec=document.createElement("div"); sec.className="dim";
+  sec.innerHTML=`<h2>${d.code}. ${d.name} <small>${d.sub}</small></h2>`;
+  d.q.forEach((t,qi)=>{
+    const gi=di*5+qi;
+    const q=document.createElement("div"); q.className="q";
+    let opts="";
+    for(let v=1;v<=5;v++) opts+=`<label><input type="radio" name="q${gi}" value="${v}" onchange="upd()"><span><b>${v}</b></span></label>`;
+    q.innerHTML=`<div class="txt"><span class="code">${d.code}-${qi+1}</span>${t}</div><div class="opts">${opts}</div>`;
+    sec.appendChild(q);
+  });
+  qc.appendChild(sec);
+});
+
+function canSubmit(){
+  const n=document.querySelectorAll('input[type=radio]:checked').length;
+  const email=document.getElementById("email").value.trim();
+  const agree=document.getElementById("agree").checked;
+  return n===35 && Diagnostic.isValidEmail(email) && agree;
+}
+
+function upd(){
+  const n=document.querySelectorAll('input[type=radio]:checked').length;
+  document.getElementById("progNum").textContent=n;
+  document.getElementById("submitBtn").disabled = !canSubmit();
+}
+
+async function submit(){
+  document.getElementById("submitBtn").disabled = true;
+  const answers=[]; for(let i=0;i<35;i++) answers.push(+document.querySelector(`input[name=q${i}]:checked`).value);
+  const payload={code:CODE, email:document.getElementById("email").value.trim(), answers};
+  try{
+    const r=await fetch(ENDPOINT,{method:"POST",body:JSON.stringify(payload)});
+    const j=await r.json();
+    if(!j.ok) throw new Error(j.error||"저장 실패");
+    document.getElementById("survey").style.display="none";
+    document.getElementById("bar").style.display="none";
+    document.getElementById("done").style.display="block";
+    document.getElementById("err").style.display="none";
+    window.scrollTo(0,0);
+  }catch(e){
+    document.getElementById("err").textContent="전송에 실패했습니다. 잠시 후 다시 시도해 주세요.";
+    document.getElementById("err").style.display="block";
+    upd();
+  }
+}
+</script>
+</body>
+</html>
