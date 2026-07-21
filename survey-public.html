@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI 네이티브 조직 성숙도 자가진단(공개판) | SEEG</title>
+<!--
+  survey-public.html — 공개판(마케팅 리드 관문)
+  - survey.html(회사별 초대코드 수집 전용)과 달리 초대코드 없이 익명 방문자가 바로 진단할 수 있다.
+  - 자가진단_web_v1.html의 "즉시 결과 표시(레벨·7축 레이더·NARR 권고)" 로직 +
+    survey.html의 "이메일·동의·저장(fetch)" 로직을 결합했다.
+  - 결과 표시는 항상 즉시 이뤄지며, 저장(리드 수집)은 best-effort다(실패해도 결과 화면에 영향 없음).
+
+  배포 노트:
+  - 공개 응답 저장이 정상 동작하려면 구글시트 `companies` 탭에 코드 `PUBLIC` 1행이
+    미리 등록돼 있어야 한다(Code.gs가 등록된 코드만 허용). 배포 시 대표가 추가한다.
+  - survey.html은 건드리지 않는다(회사별 수집 전용 용도를 그대로 유지).
+-->
+<style>
+  :root{
+    --navy:#1F4E79; --navy2:#2E6CA4; --bg:#f5f7fa; --card:#fff;
+    --line:#e3e8ef; --ink:#1a2432; --muted:#6b7684; --accent:#e8873a; --good:#2f9e6f;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",Arial,sans-serif;
+    background:var(--bg);color:var(--ink);line-height:1.6}
+  .wrap{max-width:860px;margin:0 auto;padding:0 20px 80px}
+  header{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:44px 20px 40px;text-align:center}
+  header h1{margin:0 0 8px;font-size:26px;letter-spacing:-.5px}
+  header p{margin:0;opacity:.85;font-size:14px}
+  .badge{display:inline-block;margin-bottom:14px;font-size:12px;background:rgba(255,255,255,.16);
+    padding:4px 12px;border-radius:20px;letter-spacing:.5px}
+  .intro{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin:26px 0;font-size:14px}
+  .intro b{color:var(--navy)}
+  .scale-legend{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;font-size:12px;color:var(--muted)}
+  .scale-legend span{background:#eef2f7;padding:3px 10px;border-radius:6px}
+  .field-group{margin-top:18px;border-top:1px solid var(--line);padding-top:16px}
+  .field-group label.field-label{display:block;font-size:13px;font-weight:700;color:var(--navy);margin-bottom:6px}
+  .field-group input[type=email]{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font-size:14px}
+  .field-group input[type=email].invalid{border-color:#d64545}
+  .consent{margin-top:14px;font-size:12px;color:var(--muted);background:#f7f9fc;border-radius:8px;padding:12px 14px}
+  .consent label{display:flex;align-items:flex-start;gap:8px;cursor:pointer}
+  .consent input[type=checkbox]{margin-top:3px;flex:none}
+  .dim{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:8px 24px 20px;margin:18px 0;
+    box-shadow:0 1px 3px rgba(20,40,80,.04)}
+  .dim h2{font-size:16px;color:var(--navy);border-bottom:2px solid #eef2f7;padding-bottom:10px;margin:18px 0 6px}
+  .dim h2 small{color:var(--muted);font-weight:400;font-size:12px;margin-left:6px}
+  .q{padding:14px 0;border-bottom:1px dashed #eef2f7}
+  .q:last-child{border-bottom:none}
+  .q .txt{font-size:14px;margin-bottom:10px}
+  .q .code{color:var(--accent);font-weight:700;font-size:12px;margin-right:6px}
+  .opts{display:flex;gap:6px;flex-wrap:wrap}
+  .opts label{flex:1;min-width:88px;text-align:center;font-size:12px;border:1px solid var(--line);
+    border-radius:8px;padding:8px 4px;cursor:pointer;transition:.12s;background:#fbfcfe;color:var(--muted)}
+  .opts input{display:none}
+  .opts input:checked + span{color:#fff}
+  .opts label:has(input:checked){background:var(--navy);border-color:var(--navy);color:#fff}
+  .opts b{display:block;font-size:15px;color:inherit}
+  .bar{position:sticky;bottom:0;background:rgba(255,255,255,.94);backdrop-filter:blur(6px);
+    border-top:1px solid var(--line);padding:14px 20px;text-align:center}
+  .bar .prog{font-size:13px;color:var(--muted);margin-bottom:8px}
+  button.cta{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:13px 34px;
+    font-size:15px;font-weight:700;cursor:pointer}
+  button.cta:disabled{background:#c9d1dc;cursor:not-allowed}
+  /* result */
+  #result{display:none}
+  .rcard{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:30px;margin:26px 0;text-align:center}
+  .level-big{font-size:52px;font-weight:800;color:var(--navy);letter-spacing:-1px}
+  .level-name{font-size:20px;font-weight:700;margin-top:-6px}
+  .level-desc{color:var(--muted);font-size:14px;margin-top:6px}
+  .metrics{display:flex;justify-content:center;gap:30px;margin:20px 0;flex-wrap:wrap}
+  .metrics .m{font-size:13px;color:var(--muted)}
+  .metrics .m b{display:block;font-size:22px;color:var(--ink)}
+  .metrics .m .bottleneck{color:var(--accent)}
+  .radar-wrap{margin:10px auto}
+  .radar-label{font-size:12px;color:var(--muted);margin-top:2px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;text-align:left;margin-top:16px}
+  @media(max-width:600px){.grid2{grid-template-columns:1fr}}
+  .dimscore{font-size:13px;background:#f7f9fc;border-radius:8px;padding:8px 12px;display:flex;justify-content:space-between}
+  .dimscore .track{flex:1;height:6px;background:#e3e8ef;border-radius:4px;margin:0 10px;align-self:center;position:relative}
+  .dimscore .fill{position:absolute;left:0;top:0;bottom:0;background:var(--navy2);border-radius:4px}
+  .narr{text-align:left;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px 26px;margin:18px 0}
+  .narr h3{color:var(--navy);margin:0 0 6px;font-size:17px}
+  .narr .sec{margin:14px 0}
+  .narr .sec b{color:var(--navy)}
+  .narr ol{margin:6px 0 0;padding-left:20px}
+  .narr li{margin:5px 0;font-size:14px}
+  .ctaBox{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;border-radius:16px;padding:28px;text-align:center;margin:20px 0}
+  .ctaBox h3{margin:0 0 8px}
+  .ctaBox p{opacity:.9;font-size:14px;margin:0 0 16px}
+  .ctaBox a{display:inline-block;background:var(--accent);color:#fff;text-decoration:none;
+    padding:13px 30px;border-radius:10px;font-weight:700}
+  /* 벤치마크 리포트 사전예약 — 2순위 보조 톤(상담 CTA보다 시각적 무게를 낮춘다) */
+  .preorderBox{background:#f7f9fc;border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin:16px 0;text-align:center}
+  .preorderBox h3{margin:0 0 8px;font-size:15px;color:var(--navy2);font-weight:700}
+  .preorderBox p{margin:0 0 16px;font-size:13px;color:var(--muted);text-align:left}
+  .preorderBox .field-group{border-top:none;padding-top:0;margin-top:12px;text-align:left}
+  .preorderBox .field-group input[type=text],.preorderBox .field-group input[type=email]{
+    width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-size:13px}
+  .preorderBox .consent{background:transparent;padding:10px 0}
+  button.btnSecondary{background:#fff;color:var(--navy2);border:1px solid var(--navy2);border-radius:9px;
+    padding:9px 22px;font-size:13px;font-weight:600;cursor:pointer}
+  button.btnSecondary:disabled{color:var(--muted);border-color:var(--line);cursor:not-allowed}
+  .preorderNote{font-size:11px;color:var(--muted);margin-top:10px}
+  .preorderErrMsg{font-size:12px;color:#b3261e;margin-top:10px}
+  #preorderDone{font-size:14px;color:var(--good);font-weight:600}
+  .note{font-size:11px;color:var(--muted);text-align:center;margin-top:30px}
+  .restart{background:none;border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:9px 20px;cursor:pointer;font-size:13px}
+  #err{display:none;background:#fdecea;color:#b3261e;border:1px solid #f5c2c0;border-radius:10px;
+    padding:12px 16px;margin:16px 0;font-size:13px;text-align:center}
+</style>
+</head>
+<body>
+<header>
+  <div class="badge">SEEG · 무료 공개 진단</div>
+  <h1>AI 네이티브 조직 성숙도 자가진단</h1>
+  <p>우리 개발조직은 AI 네이티브로 얼마나 성숙했을까? · 35문항 · 약 7분 · 결과 즉시 확인</p>
+</header>
+
+<div class="wrap">
+  <div id="survey">
+    <div class="intro">
+      이 진단은 <b>“코드를 잘 짜는가”</b>가 아니라
+      <b>“조직이 자신의 판단을 데이터로 남기고, 패턴으로 세우고, 에이전트에 위임하되 그 한계를 아는가”</b>를
+      L3~L7로 측정합니다.
+      <div class="scale-legend">
+        <span>1 전혀 아니다</span><span>2 거의 아니다</span><span>3 보통</span>
+        <span>4 대체로 그렇다</span><span>5 매우 그렇다</span>
+      </div>
+      <div style="margin-top:10px;font-size:12px;color:var(--muted)">
+        ※ 증거(문서·로그·회의체)가 없으면 3점 이상을 주지 마세요. 최근 3개월 실제 기준으로 응답합니다.
+      </div>
+      <div class="field-group">
+        <label class="field-label" for="email">이메일 <span style="color:var(--accent)">*</span></label>
+        <input type="email" id="email" placeholder="you@company.com" autocomplete="email" oninput="upd()">
+        <div style="margin-top:6px;font-size:12px;color:var(--muted)">결과는 화면에 바로 표시되며, 이메일은 결과 저장·후속 안내 목적으로만 수집합니다.</div>
+      </div>
+      <div class="consent">
+        <label>
+          <input type="checkbox" id="agree" onchange="upd()">
+          <span>[필수] 본 진단 응답과 이메일은 SEEG의 조직 성숙도 진단·상담 목적에 한해 수집·이용되며, SEEG 외부에 제공되지 않습니다. 수집 항목: 이메일, 진단 응답. 동의합니다</span>
+        </label>
+      </div>
+    </div>
+    <div id="questions"></div>
+  </div>
+
+  <div id="result">
+    <div class="rcard">
+      <div class="level-big" id="rLevel">L4</div>
+      <div class="level-name" id="rName">Associate 조직</div>
+      <div class="level-desc" id="rDesc"></div>
+      <div class="metrics">
+        <div class="m">종합 점수<b id="rScore">0.00</b></div>
+        <div class="m">성장의 병목<b class="bottleneck" id="rBottleneck">–</b></div>
+      </div>
+      <div class="radar-wrap">
+        <svg id="radar" width="340" height="320" viewBox="0 0 340 320"></svg>
+        <div class="radar-label">7차원 역량 레이더</div>
+      </div>
+      <div class="grid2" id="rDims"></div>
+    </div>
+    <div class="narr" id="rNarr"></div>
+    <div class="ctaBox">
+      <h3>다음 단계 — 병목을 살펴보시길 권해 드립니다</h3>
+      <p>이 진단은 ‘현재 위치’를 보여드립니다. ‘어떻게 올라가는가’는 조직마다 다릅니다.<br>
+         귀 조직의 병목 「<span id="rBottleneck2">–</span>」을 어떻게 메울지, SEEG 컨설턴트와의 30분 상담을 통해 살펴보시길 권해 드립니다.</p>
+      <a href="https://forms.gle/q8jPczGMbFV7riDs8" id="ctaLink" target="_blank" rel="noopener">▶ 무료 진단 리뷰 상담 신청</a>
+    </div>
+    <div class="preorderBox" id="preorderBox">
+      <h3>벤치마크 리포트 사전예약</h3>
+      <p>진단 결과로 우리 조직의 좌표는 확인하셨습니다. 그렇다면 업계의 다른 조직들과 비교하면 어디쯤일까요? 그 답을 드리려고, 업계 대비 분위와 영역별 갭을 담은 벤치마크 리포트를 준비하고 있습니다. 출시 소식을 가장 먼저 받고 싶으시다면, 아래 버튼으로 사전예약을 남겨 주시기 바랍니다.</p>
+      <div id="preorderForm">
+        <div class="field-group">
+          <label class="field-label" for="preName">이름 <span style="color:var(--accent)">*</span></label>
+          <input type="text" id="preName" placeholder="홍길동">
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="preCompany">회사 <span style="color:var(--accent)">*</span></label>
+          <input type="text" id="preCompany" placeholder="회사명">
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="preEmail">이메일 <span style="color:var(--accent)">*</span></label>
+          <input type="email" id="preEmail" placeholder="you@company.com">
+        </div>
+        <div class="consent">
+          <label>
+            <input type="checkbox" id="preIntent">
+            <span>출시되면 구매를 검토하겠습니다</span>
+          </label>
+        </div>
+        <div style="text-align:center;margin-top:16px">
+          <button class="btnSecondary" id="preSubmitBtn" onclick="submitPreorder()">벤치마크 리포트 사전예약</button>
+        </div>
+        <div class="preorderNote">
+          ※ 현재 참여 조직 기준이며, 참여가 늘수록 분위가 정밀해집니다.
+          <!-- 표본이 쌓이면 숫자를 다시 넣을 자리(9월 전후 재검토). 넣을 때 형식: "현재 참여 조직 NN곳 기준이며" — 자리표시자 대신 실제 숫자만. -->
+        </div>
+        <div id="preorderErr" class="preorderErrMsg" style="display:none"></div>
+      </div>
+      <div id="preorderDone" style="display:none">사전예약이 접수되었습니다. 출시 소식을 가장 먼저 보내 드리겠습니다.</div>
+    </div>
+    <div id="err"></div>
+    <div style="text-align:center;margin:20px 0"><button class="restart" onclick="location.reload()">↺ 다시 진단하기</button></div>
+  </div>
+
+  <div class="note">AI Native Organization Maturity Diagnostic v1.0(공개판) · 근거: AI_Native_Engineer_Framework(L3~L7)<br>
+    본 결과는 참고용 자가진단입니다. 정밀 진단·조직 재설계는 SEEG 컨설팅(A8)에서 진행합니다.</div>
+</div>
+
+<div class="bar" id="bar">
+  <div class="prog"><span id="progNum">0</span> / 35 문항 응답</div>
+  <button class="cta" id="submitBtn" disabled onclick="finish()">결과 보기</button>
+</div>
+
+<script>
+// 이메일 형식 검증 (webapp/lib/diagnostic.js의 isValidEmail과 동일 규칙; 단일 파일 유지를 위해 인라인)
+const Diagnostic = { isValidEmail: function(s){ return typeof s==="string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s); } };
+
+const DIMS = [
+ {code:"D1",name:"판단데이터 축적",sub:"의사결정의 상황·판단·근거·결과를 기록하는가",
+  q:["주요 의사결정을 '상황·판단·근거·결과' 형식으로 기록으로 남긴다",
+     "판단 기록에 '왜 그렇게 판단했는가'(근거)가 빠지지 않고 명시된다",
+     "판단 기록이 개인 노트가 아니라 팀·조직이 공유·검색하는 저장소에 쌓인다",
+     "같은 상황에 팀원 간 일관된 판단이 나오며, 불일치는 기록으로 조정된다",
+     "판단 데이터의 누적량과 품질(4요소 충족률)을 주기적으로 점검한다"]},
+ {code:"D2",name:"패턴화·표준화",sub:"판단이 재사용 가능한 기준으로 정착됐는가",
+  q:["반복되는 판단에서 패턴을 발견해 언어화한다",
+     "발견한 패턴이 팀이 따를 판단 기준(임계치·규칙)으로 문서화돼 있다",
+     "판단 기준 문서가 신입도 보고 스스로 판단할 만큼 구체적이다",
+     "판단 기준이 개인 것이 아니라 팀 공용 표준으로 합의·공유된다",
+     "판단 기준 문서가 버전 관리되고 실제 사용·개정된다(사문서 아님)"]},
+ {code:"D3",name:"에이전트화",sub:"판단·업무를 에이전트로 설계·검증하는가",
+  q:["업무에 AI 에이전트를 설계·구축·운영한다(단발 프롬프트를 넘어)",
+     "여러 에이전트가 협업하는 워크플로우(데이터 교환·역할 분담)를 운영한다",
+     "축적된 판단 데이터를 학습시킨 '판단 에이전트'를 설계·시도한 경험이 있다",
+     "판단 에이전트의 정확도를 평가하고 '언제 작동/실패'를 정의할 수 있다",
+     "에이전트가 인간 판단을 대체할 영역과 아닌 영역을 구분해 배치한다"]},
+ {code:"D4",name:"도구·인프라",sub:"파이프라인·평가·데이터 인프라가 갖춰졌는가",
+  q:["프롬프트·에이전트를 형상관리(버전·리뷰·롤백)하는 체계가 있다",
+     "에이전트 산출물의 품질을 자동 평가(테스트·eval·회귀)하는 파이프라인이 있다",
+     "판단 데이터·로그가 재사용 가능한 형태(구조화·태깅)로 수집·저장된다",
+     "도메인 지식·판단 기준을 에이전트가 참조할 지식베이스/RAG 인프라가 있다",
+     "도구·인프라가 개인 세팅이 아니라 팀 공용 표준으로 제공된다"]},
+ {code:"D5",name:"조직·역할",sub:"AI 네이티브 역할·독립도·교육 체계가 있는가",
+  q:["AI 네이티브 엔지니어 역할(에이전트 설계·판단 검증)이 직무로 정의돼 있다",
+     "엔지니어의 의사결정 독립도가 높다(일상 판단은 자율)",
+     "판단 체계·에이전트 운영을 가르치는 교육·온보딩 체계가 있다",
+     "AI 네이티브 역량이 평가·승진 기준에 반영된다",
+     "경영진이 AI 네이티브 방향을 상담할 내부 권위자가 존재한다"]},
+ {code:"D6",name:"거버넌스·탈출조건",sub:"자동화 범위·한계·책임을 규율하는가",
+  q:["'이 업무의 에이전트화는 여기서 멈춘다'는 탈출 조건을 명시적으로 판단한다",
+     "가치 판단·기본 틀 설정은 인간의 몫으로 남긴다는 원칙이 공유돼 있다",
+     "에이전트 판단의 실패를 조직 학습 자산으로 회수하는 리뷰 절차가 있다",
+     "AI 사용의 리스크·책임·검증 책임 소재에 대한 거버넌스 규칙이 있다",
+     "AI 사용의 윤리·신뢰 원칙(설명가능성·편향·투명성)을 문서화·준수한다"]},
+ {code:"D7",name:"도메인 확대·전이",sub:"판단 체계가 여러 도메인으로 확장·보편화됐는가",
+  q:["AI 판단 체계·에이전트가 둘 이상의 서로 다른 도메인에 적용된다",
+     "도메인마다 판단 기준이 어떻게 다른지 구분해 각각 관리한다",
+     "한 도메인에서 정립한 판단 체계를 다른 도메인으로 이식·확장한 경험이 있다",
+     "여러 도메인을 가로지르는 메타패턴을 발견해 활용한다",
+     "보편 판단 원칙과 도메인 특수 기준을 분리해 체계화하고 조직이 따른다"]},
+];
+const SHORT=["판단데이터","패턴화","에이전트화","도구인프라","조직역할","거버넌스","도메인확대"];
+const LV={3:["Trainee 조직","판단 기록을 시작한 단계"],4:["Associate 조직","판단 기준 초안이 형성된 단계"],
+  5:["Senior 조직","판단 기준이 문서화되고 멀티에이전트를 운영하는 단계"],
+  6:["Staff 조직","전사 판단 체계와 에이전트 검증을 갖춘 단계"],
+  7:["Principal 조직","AI 네이티브 철학·거버넌스를 정립한 최상위 단계"]};
+const NARR={
+ 3:{d:"AI 도구를 개인기로 쓰기 시작했으나, 판단이 조직 자산으로 남지 않는 단계입니다. 담당자가 바뀌면 판단도 사라집니다.",
+    g:"판단 기록 체계 부재 · 공유 저장소 없음 · 판단 기준 미형성",
+    r:["주요 결정을 '상황·판단·근거·결과' 4요소로 남기는 템플릿을 정하고 팀당 월 5~10건부터 시작",
+       "개인 노트를 팀 공용 위키/리포지토리로 모아 검색 가능하게",
+       "모든 기록에 근거 한 줄을 강제 — 근거 없는 기록은 미완성으로 간주"]},
+ 4:{d:"판단이 기록되기 시작했고 일부 팀이 자신만의 기준 초안을 갖기 시작했습니다. 다만 기준이 팀마다 흩어져 있고 모호합니다.",
+    g:"기준의 문서화·표준화 부족 · 도메인별 차이 미구분 · 초보적 에이전트 협업",
+    r:["팀별 암묵 기준을 1~2p로 명문화하고 임계치·규칙을 수치로",
+       "도메인별 판단 차이를 별도 관리하기 시작(예: 금융 vs 마케팅)",
+       "2~3개 에이전트 간 데이터 형식·역할을 정의해 협업 워크플로우로 확장"]},
+ 5:{d:"도메인별 판단 기준이 문서로 정착되어 팀이 따르고, 멀티에이전트를 자율 운영합니다. 판단 에이전트를 시도하는 전환점입니다.",
+    g:"단일~소수 도메인에 갇힘 · 도메인 간 메타패턴·판단 에이전트 검증 체계 부재",
+    r:["팀별 문서를 신입도 쓰는 조직 표준으로 승격·배포",
+       "'언제 작동/실패'를 정의하는 판단 에이전트 정확도 평가 파이프라인 구축",
+       "도메인을 2~3개로 넓히고 신입 교육으로 판단 체계를 전파"]},
+ 6:{d:"전사 판단 체계가 확립됐고 도메인 간 메타패턴을 발견합니다. 남은 과제는 기술이 아니라 철학·거버넌스, 그리고 도메인 보편화입니다.",
+    g:"자동화 한계·가치판단 경계의 조직 차원 정의가 약함 · 도메인 확장(L7 요건) 미달 가능",
+    r:["판단 체계를 4개 이상 도메인으로 넓히고, 판단 에이전트가 영구히 못 하는 영역을 문서로 증명",
+       "도메인 보편 원칙 vs 특수 기준을 분리·체계화하고 리스크·책임 규율",
+       "컨퍼런스·논문·오픈소스로 조직의 AI 네이티브 체계를 외부 표준화"]},
+ 7:{d:"AI 네이티브 엔지니어링의 철학과 거버넌스를 정립한 최상위 성숙 단계입니다. 과제는 절대 성숙이 아니라 지속 갱신입니다.",
+    g:"3~5년 후 기술 변화 대비 · 조직문화의 재생산",
+    r:["3~5년 후 AI를 예상한 판단 체계를 선제 설계",
+       "'팀의 50%를 판단데이터 고숙련자로' 같은 정량 목표로 인재 재생산",
+       "표준·교육을 외부로 확산해 산업 레퍼런스가 됨"]}
+};
+
+// ▼ 배포 설정: 아래 URL만 교체하세요 ------------------------------------
+// Google Apps Script 웹앱 배포 URL. 응답 저장(리드 수집)에 사용됩니다.
+const ENDPOINT = "https://script.google.com/macros/s/AKfycbzL-3SP87_ljbtRBTekSUrpIz1xTK_rNSM0xKycRCOxK0Nith8c9wPme-LzuHPralcP/exec";
+// -------------------------------------------------------------------------
+
+// 공개판: 초대코드(?c=) 없이도 동작한다. ?c= 값이 있으면 그 값을, 없으면
+// 회사코드 대신 고정 코드 "PUBLIC"을 사용해 저장한다(companies 탭에 PUBLIC 코드가
+// 등록돼 있어야 저장이 성공한다 — 배포 노트 참고).
+const params = new URLSearchParams(location.search);
+const CODE = params.get("c") || "PUBLIC";
+
+// 결과 화면에서 계산된 진단 종합점수(사전예약 payload의 score에 사용). 결과 표시 전에는 빈 문자열.
+let lastScore = "";
+
+// render questions
+const qc=document.getElementById("questions");
+DIMS.forEach((d,di)=>{
+  const sec=document.createElement("div"); sec.className="dim";
+  sec.innerHTML=`<h2>${d.code}. ${d.name} <small>${d.sub}</small></h2>`;
+  d.q.forEach((t,qi)=>{
+    const gi=di*5+qi;
+    const q=document.createElement("div"); q.className="q";
+    let opts="";
+    for(let v=1;v<=5;v++) opts+=`<label><input type="radio" name="q${gi}" value="${v}" onchange="upd()"><span><b>${v}</b></span></label>`;
+    q.innerHTML=`<div class="txt"><span class="code">${d.code}-${qi+1}</span>${t}</div><div class="opts">${opts}</div>`;
+    sec.appendChild(q);
+  });
+  qc.appendChild(sec);
+});
+
+function canSubmit(){
+  const n=document.querySelectorAll('input[type=radio]:checked').length;
+  const email=document.getElementById("email").value.trim();
+  const agree=document.getElementById("agree").checked;
+  return n===35 && Diagnostic.isValidEmail(email) && agree;
+}
+
+function upd(){
+  const n=document.querySelectorAll('input[type=radio]:checked').length;
+  document.getElementById("progNum").textContent=n;
+  document.getElementById("submitBtn").disabled = !canSubmit();
+}
+
+// 결과 표시(자가진단_web_v1.html 로직 그대로) + 저장(best-effort, survey.html 로직 응용)을
+// 동시에 수행한다. 저장이 실패해도 결과 화면은 항상 정상 표시된다(마케팅 관문이 우선).
+function finish(){
+  if(!canSubmit()) return;
+  document.getElementById("submitBtn").disabled = true;
+  const answers=[]; for(let i=0;i<35;i++) answers.push(+document.querySelector(`input[name=q${i}]:checked`).value);
+  const email=document.getElementById("email").value.trim();
+
+  showResult(answers);       // 1) 즉시 결과 표시(항상 성공)
+  saveLead(email, answers);  // 2) 리드 저장(best-effort, 실패해도 결과 화면엔 영향 없음)
+}
+
+function showResult(answers){
+  const ds=[];
+  for(let di=0;di<7;di++){let s=0;for(let qi=0;qi<5;qi++){s+=answers[di*5+qi];}ds.push(s/5);}
+  const S=ds.reduce((a,b)=>a+b,0)/7;
+  const lvl=s=>s<1.8?3:s<2.6?4:s<3.4?5:s<4.2?6:7;
+  const onum=lvl(S), cap=lvl(Math.min(ds[0],ds[1])), d7=ds[6]<3.4?6:7;
+  const fin=Math.min(onum,cap,d7);
+  const mn=Math.min(...ds), wi=ds.indexOf(mn);
+  // fill
+  document.getElementById("rLevel").textContent="L"+fin;
+  document.getElementById("rName").textContent=LV[fin][0];
+  document.getElementById("rDesc").textContent=LV[fin][1];
+  document.getElementById("rScore").textContent=S.toFixed(2);
+  lastScore=Number(S.toFixed(2));
+  document.getElementById("rBottleneck").textContent=SHORT[wi];
+  document.getElementById("rBottleneck2").textContent=SHORT[wi];
+  // dim bars
+  document.getElementById("rDims").innerHTML=ds.map((v,i)=>
+    `<div class="dimscore"><span>${DIMS[i].code} ${SHORT[i]}</span><span class="track"><span class="fill" style="width:${v/5*100}%"></span></span><b>${v.toFixed(1)}</b></div>`).join("");
+  // narrative
+  const nz=NARR[fin];
+  document.getElementById("rNarr").innerHTML=
+    `<h3>${"L"+fin} · ${LV[fin][0]} 진단</h3>
+     <div class="sec"><b>현재 상태.</b> ${nz.d}</div>
+     <div class="sec"><b>주요 갭.</b> ${nz.g}</div>
+     <div class="sec"><b>다음 단계 권고</b><ol>${nz.r.map(x=>`<li>${x}</li>`).join("")}</ol></div>`;
+  drawRadar(ds);
+  document.getElementById("survey").style.display="none";
+  document.getElementById("bar").style.display="none";
+  document.getElementById("result").style.display="block";
+  window.scrollTo(0,0);
+}
+
+function drawRadar(ds){
+  const svg=document.getElementById("radar"), cx=170,cy=160,R=118,N=7;
+  const pt=(i,r)=>{const a=-Math.PI/2+i*2*Math.PI/N;return[cx+r*Math.cos(a),cy+r*Math.sin(a)];};
+  let g="";
+  for(let ring=1;ring<=5;ring++){let p=[];for(let i=0;i<N;i++)p.push(pt(i,R*ring/5).join(","));
+    g+=`<polygon points="${p.join(" ")}" fill="none" stroke="#e3e8ef" stroke-width="1"/>`;}
+  for(let i=0;i<N;i++){const[x,y]=pt(i,R);g+=`<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="#e3e8ef"/>`;
+    const[lx,ly]=pt(i,R+16);g+=`<text x="${lx}" y="${ly}" font-size="10" fill="#6b7684" text-anchor="middle" dominant-baseline="middle">${SHORT[i]}</text>`;}
+  let dp=[];for(let i=0;i<N;i++)dp.push(pt(i,R*ds[i]/5).join(","));
+  g+=`<polygon points="${dp.join(" ")}" fill="rgba(31,78,121,.28)" stroke="#1F4E79" stroke-width="2"/>`;
+  for(let i=0;i<N;i++){const[x,y]=pt(i,R*ds[i]/5);g+=`<circle cx="${x}" cy="${y}" r="3" fill="#1F4E79"/>`;}
+  svg.innerHTML=g;
+}
+
+// 리드 저장. 공개판은 마케팅 관문이 우선이므로 저장 실패는 조용히 콘솔 경고만 남기고
+// 결과 화면 표시를 막거나 되돌리지 않는다.
+async function saveLead(email, answers){
+  const payload={code:CODE, email, answers};
+  try{
+    const r=await fetch(ENDPOINT,{method:"POST",body:JSON.stringify(payload)});
+    const j=await r.json().catch(()=>({}));
+    if(!j || !j.ok){
+      console.warn("[SEEG survey-public] 리드 저장 실패(best-effort, 결과 화면엔 영향 없음):", j && j.error);
+    }
+  }catch(e){
+    console.warn("[SEEG survey-public] 리드 저장 요청 실패(best-effort, 결과 화면엔 영향 없음):", e);
+  }
+}
+
+// 벤치마크 리포트 사전예약 전송(best-effort). 진단 결과 화면과 완전히 분리된 별도 폼이며,
+// 실패해도 이미 표시된 결과 화면에는 어떤 영향도 주지 않는다.
+async function submitPreorder(){
+  const name=document.getElementById("preName").value.trim();
+  const company=document.getElementById("preCompany").value.trim();
+  const email=document.getElementById("preEmail").value.trim();
+  const intent=document.getElementById("preIntent").checked;
+  const errEl=document.getElementById("preorderErr");
+  errEl.style.display="none";
+  if(!name){ errEl.textContent="이름을 입력해 주세요."; errEl.style.display="block"; return; }
+  if(!company){ errEl.textContent="회사를 입력해 주세요."; errEl.style.display="block"; return; }
+  if(!Diagnostic.isValidEmail(email)){ errEl.textContent="이메일 형식을 확인해 주세요."; errEl.style.display="block"; return; }
+
+  const btn=document.getElementById("preSubmitBtn");
+  btn.disabled=true; // 중복 제출 방지
+  // 사전예약 전송 (best-effort)
+  const payload={type:"preorder", name, company, email, intent, score: (typeof lastScore==="number"?lastScore:"")};
+  try{
+    const r=await fetch(ENDPOINT,{method:"POST",body:JSON.stringify(payload)});
+    const j=await r.json().catch(()=>({}));
+    if(j && j.ok){
+      document.getElementById("preorderForm").style.display="none";
+      document.getElementById("preorderDone").style.display="block";
+    }else{
+      errEl.textContent="사전예약 접수 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.";
+      errEl.style.display="block";
+      btn.disabled=false;
+    }
+  }catch(e){
+    errEl.textContent="사전예약 접수 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.";
+    errEl.style.display="block";
+    btn.disabled=false;
+  }
+}
+</script>
+</body>
+</html>
