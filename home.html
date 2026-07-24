@@ -1,0 +1,548 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SEEG · 소프트웨어공학엑스퍼트그룹 | AI 시대 개발 조직 설계</title>
+<meta name="description" content="SEEG(소프트웨어공학엑스퍼트그룹)는 26년의 소프트웨어 공학으로 개발 조직의 아키텍처 설계·AI 네이티브 전환·조직 성숙도 진단·교육을 제공합니다.">
+<meta name="color-scheme" content="light dark">
+<meta property="og:title" content="SEEG · 소프트웨어공학엑스퍼트그룹">
+<meta property="og:description" content="개발 조직이 AI로 일하는 방식을, 다시 설계합니다.">
+<style>html,body{margin:0;padding:0}img{max-width:100%}</style>
+</head>
+<body>
+<style>
+  /* ── SEEG 공식 CI: 브랜드 레드 #D81F27 · 블랙 워드마크 · 화이트 ── */
+  :root{
+    --bg:#ffffff; --bg-alt:#f7f7f8; --panel:#16181b;
+    --ink:#17191c; --ink-soft:#4b4f55; --muted:#868b92;
+    --line:#ececee; --line-2:#dedfe2;
+    --brand:#d81f27; --brand-2:#ec3b42; --brand-tint:#fdecec; --brand-deep:#16181b;
+    --pill:#17191c; --pill-ink:#ffffff;
+    --sans:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Malgun Gothic",system-ui,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#0d0e10; --bg-alt:#141518; --panel:#141518;
+      --ink:#f2f3f5; --ink-soft:#c1c5cc; --muted:#868d97;
+      --line:#22242a; --line-2:#2f323a;
+      --brand:#f04b52; --brand-2:#ec3b42; --brand-tint:#2a1618; --brand-deep:#141518;
+      --pill:#f2f3f5; --pill-ink:#0d0e10;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0d0e10; --bg-alt:#141518; --panel:#141518;
+    --ink:#f2f3f5; --ink-soft:#c1c5cc; --muted:#868d97;
+    --line:#22242a; --line-2:#2f323a;
+    --brand:#f04b52; --brand-2:#ec3b42; --brand-tint:#2a1618; --brand-deep:#141518;
+    --pill:#f2f3f5; --pill-ink:#0d0e10;
+  }
+  :root[data-theme="light"]{
+    --bg:#ffffff; --bg-alt:#f7f7f8; --panel:#16181b;
+    --ink:#17191c; --ink-soft:#4b4f55; --muted:#868b92;
+    --line:#ececee; --line-2:#dedfe2;
+    --brand:#d81f27; --brand-2:#ec3b42; --brand-tint:#fdecec; --brand-deep:#16181b;
+    --pill:#17191c; --pill-ink:#ffffff;
+  }
+
+  *{box-sizing:border-box}
+  .seeg{font-family:var(--sans);color:var(--ink);background:var(--bg);
+    line-height:1.72;font-size:17px;-webkit-font-smoothing:antialiased;letter-spacing:-.011em}
+  .seeg *{margin:0}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 32px}
+  .eyebrow{font-size:13px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--brand-2)}
+  a{color:inherit;text-decoration:none}
+
+  /* nav */
+  .nav{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);
+    backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--line)}
+  .nav .wrap{display:flex;align-items:center;height:74px;gap:38px}
+  .logo{display:flex;align-items:center;gap:11px;text-decoration:none}
+  .logo .wm{font-weight:900;font-size:27px;letter-spacing:-.03em;color:var(--brand);line-height:.9}
+  .logo .tl{font-size:11.5px;font-weight:700;line-height:1.18;color:var(--ink);letter-spacing:-.006em}
+  .nav .links{display:flex;gap:32px;font-size:15px;font-weight:600;color:var(--ink-soft)}
+  .nav .links a:hover{color:var(--ink)}
+  .nav .right{margin-left:auto;display:flex;align-items:center;gap:12px}
+  .pill{display:inline-flex;align-items:center;gap:8px;border-radius:999px;font-weight:700;font-size:15px;
+    padding:12px 24px;transition:transform .14s ease,opacity .14s;cursor:pointer;white-space:nowrap}
+  .pill.solid{background:var(--pill);color:var(--pill-ink)}
+  .pill.solid:hover{transform:translateY(-1px)}
+  .pill.line{border:1.5px solid var(--line-2);color:var(--ink);background:transparent}
+  .pill.line:hover{border-color:var(--ink)}
+  .pill.brand{background:var(--brand);color:#fff}
+  @media(max-width:860px){.nav .links{display:none}}
+
+  /* hero */
+  .hero{padding:92px 0 84px;position:relative;overflow:hidden}
+  .hero .wrap{position:relative;z-index:1;display:grid;grid-template-columns:1.08fr .92fr;gap:52px;align-items:center}
+  @media(max-width:880px){.hero .wrap{grid-template-columns:1fr;gap:44px}}
+  .hero .kick{display:inline-flex;align-items:center;gap:9px;border:1px solid var(--line-2);border-radius:999px;
+    padding:8px 16px;font-size:13px;font-weight:600;color:var(--ink-soft);margin-bottom:30px}
+  .hero .kick .b{width:7px;height:7px;border-radius:50%;background:var(--brand)}
+  .hero h1{font-size:clamp(34px,5.6vw,60px);line-height:1.1;font-weight:850;letter-spacing:-.035em;text-wrap:balance;max-width:15ch}
+  .hero h1 .fade{color:var(--brand)}
+  .hero .lede{margin-top:28px;font-size:clamp(17px,2vw,21px);color:var(--ink-soft);max-width:42ch;line-height:1.66}
+  .hero .row{display:flex;flex-wrap:wrap;gap:13px;margin-top:40px}
+  .hero .pill{padding:16px 30px;font-size:16.5px}
+  .hero-vis{background:var(--brand-deep);border-radius:28px;padding:30px 28px 24px;position:relative;overflow:hidden;
+    box-shadow:0 34px 74px rgba(13,27,51,.30)}
+  .hero-vis svg{width:100%;height:auto;display:block}
+  .hero-vis .wm{margin-top:6px;text-align:center;font-size:11px;font-weight:600;letter-spacing:.22em;color:#6a5254}
+  @media(max-width:880px){.hero-vis{max-width:440px;margin:0 auto;width:100%}}
+  .halo{position:absolute;top:-220px;left:-180px;width:560px;height:560px;border-radius:50%;
+    background:radial-gradient(circle at 42% 42%,var(--brand-tint),transparent 62%);z-index:0;pointer-events:none}
+
+  /* stat strip */
+  .strip{border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--bg-alt)}
+  .strip .wrap{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;padding:40px 32px}
+  @media(max-width:720px){.strip .wrap{grid-template-columns:repeat(2,1fr);gap:32px}}
+  .stat .n{font-size:34px;font-weight:850;letter-spacing:-.03em;line-height:1}
+  .stat .l{font-size:14px;color:var(--muted);margin-top:8px}
+
+  /* section */
+  section{padding:104px 0}
+  .head{max-width:44ch;margin-bottom:60px}
+  .head h2{font-size:clamp(28px,3.8vw,42px);font-weight:850;letter-spacing:-.03em;line-height:1.18;text-wrap:balance;margin-top:16px}
+  .head p{margin-top:20px;font-size:18px;color:var(--ink-soft);line-height:1.72}
+
+  /* about */
+  .about{background:var(--bg-alt);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .about .grid{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center}
+  @media(max-width:860px){.about .grid{grid-template-columns:1fr;gap:40px}}
+  .about h2{font-size:clamp(26px,3.5vw,38px);font-weight:850;letter-spacing:-.03em;line-height:1.24;text-wrap:balance}
+  .about p{margin-top:24px;font-size:18px;color:var(--ink-soft);line-height:1.86}
+  .about p + p{margin-top:18px}
+  .quote{border-radius:24px;border:1px solid var(--line-2);background:var(--bg);padding:52px 44px;text-align:center}
+  .quote .big{font-size:26px;font-weight:850;letter-spacing:-.03em;line-height:1.4;color:var(--brand)}
+  .quote .sub{margin-top:16px;font-size:15px;color:var(--muted);font-weight:600;letter-spacing:.02em}
+
+  /* services — clean list of cards */
+  .cards{display:grid;grid-template-columns:repeat(2,1fr);gap:22px}
+  @media(max-width:760px){.cards{grid-template-columns:1fr}}
+  .card{border:1px solid var(--line);border-radius:20px;padding:38px 34px;background:var(--bg);
+    transition:border-color .16s,transform .16s;display:flex;flex-direction:column;gap:14px}
+  .card:hover{border-color:var(--brand-2);transform:translateY(-2px)}
+  .card .no{font-size:14px;font-weight:800;color:var(--brand-2)}
+  .card h3{font-size:22px;font-weight:800;letter-spacing:-.02em}
+  .card p{font-size:16px;color:var(--ink-soft);line-height:1.68}
+
+  /* solutions — simple 3 lines */
+  .sol{background:var(--panel);color:#f0f3f8;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .sol .eyebrow{color:#f2a3a7}
+  .sol .head h2{color:#fff}
+  .sol .head p{color:#aebacb}
+  .solgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  @media(max-width:820px){.solgrid{grid-template-columns:1fr}}
+  .sol .item{border:1px solid rgba(255,255,255,.13);border-radius:18px;padding:32px 28px;display:flex;flex-direction:column;gap:12px}
+  .sol .item .k{font-size:12.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#f2a3a7}
+  .sol .item h3{font-size:20px;font-weight:800;color:#fff;letter-spacing:-.02em}
+  .sol .item p{font-size:15.5px;color:#aebacb;line-height:1.68}
+
+  /* clients / track record */
+  .reftag{font-size:12.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--brand-2);margin:0 0 16px}
+  .reftag:not(:first-of-type){margin-top:34px}
+  .clients .logos{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  .clients .logos.five{grid-template-columns:repeat(5,1fr)}
+  @media(max-width:980px){.clients .logos.five{grid-template-columns:repeat(3,1fr)}}
+  @media(max-width:760px){.clients .logos{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:640px){.clients .logos.five{grid-template-columns:repeat(2,1fr)}}
+  .lslot{height:108px;border:1px dashed var(--line-2);border-radius:16px;display:flex;align-items:center;justify-content:center;
+    color:var(--muted);font-size:14px;font-weight:600;background:var(--bg-alt);text-align:center;padding:0 14px;line-height:1.5}
+  .lslot.on{flex-direction:column;gap:13px;height:auto;min-height:158px;padding:22px 16px 20px;
+    border:1px solid var(--line);background:var(--bg);color:var(--ink);justify-content:center;
+    transition:border-color .16s,transform .16s}
+  .lslot.on:hover{border-color:var(--brand-2);transform:translateY(-2px)}
+  .lslot.on .lg{width:100%;height:58px;background:#fff;border:1px solid #eef0f2;border-radius:11px;
+    display:flex;align-items:center;justify-content:center;padding:9px 14px}
+  .lslot.on .lg img{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;display:block}
+  .lslot.on b{font-size:15px;font-weight:800;letter-spacing:-.01em;line-height:1.2}
+  .lslot.on .sub{font-size:11.5px;font-weight:600;color:var(--muted);line-height:1.4}
+  .clients .note{margin-top:26px;font-size:14px;color:var(--muted)}
+
+  /* academy */
+  .courses{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  @media(max-width:820px){.courses{grid-template-columns:1fr}}
+  .course{border:1px solid var(--line);border-radius:18px;padding:32px 28px;background:var(--bg)}
+  .course .top{font-size:13px;font-weight:800;letter-spacing:.04em;color:var(--brand-2);margin-bottom:14px}
+  .course h3{font-size:19px;font-weight:800;margin-bottom:10px;letter-spacing:-.02em}
+  .course p{font-size:15.5px;color:var(--ink-soft);line-height:1.66}
+  .axline{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+  @media(max-width:760px){.axline{grid-template-columns:repeat(2,1fr)}}
+  .ax{display:flex;flex-direction:column;gap:9px;align-items:flex-start;border:1px solid var(--line);border-radius:14px;
+    padding:20px 18px;background:var(--bg);font-size:15.5px;font-weight:750;letter-spacing:-.01em}
+  .ax .lv{font-size:13px;font-weight:850;color:#fff;background:var(--brand);border-radius:8px;padding:4px 10px;letter-spacing:.02em}
+
+  /* ===== 상담 문의 = 리드 창구 (페이지의 주인공) ===== */
+  .lead{background:linear-gradient(155deg,var(--brand) 0%,#9c1319 100%);color:#fff;position:relative;overflow:hidden}
+  :root[data-theme="dark"] .lead{background:linear-gradient(155deg,#b3242b 0%,#5c0f12 100%)}
+  .lead::before{content:"";position:absolute;top:-140px;left:-100px;width:460px;height:460px;border-radius:50%;
+    background:radial-gradient(circle,rgba(255,255,255,.10),transparent 62%);pointer-events:none}
+  .lead .wrap{padding:100px 32px;position:relative;z-index:1;display:grid;grid-template-columns:1fr 1.05fr;gap:64px;align-items:center}
+  @media(max-width:900px){.lead .wrap{grid-template-columns:1fr;gap:44px;padding:76px 32px}}
+  .lead .eyebrow{color:rgba(255,255,255,.8)}
+  .lead h2{font-size:clamp(30px,4.2vw,46px);font-weight:850;letter-spacing:-.03em;line-height:1.14;text-wrap:balance;margin-top:16px;max-width:15ch}
+  .lead .sub{margin-top:20px;font-size:18.5px;color:rgba(255,255,255,.9);line-height:1.66;max-width:40ch}
+  .lead .trust{display:flex;flex-direction:column;gap:13px;margin-top:34px}
+  .lead .trust .t{display:flex;align-items:center;gap:12px;font-size:16px;color:rgba(255,255,255,.95)}
+  .lead .trust .t .c{flex:none;width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,.16);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800}
+  /* form card */
+  .formcard{background:#fff;border-radius:24px;padding:38px 36px;box-shadow:0 30px 70px rgba(9,25,45,.32)}
+  :root[data-theme="dark"] .formcard{background:#141b25;box-shadow:0 30px 70px rgba(0,0,0,.5)}
+  .formcard .fc-h{font-size:20px;font-weight:850;letter-spacing:-.02em;color:var(--ink)}
+  .formcard .fc-s{font-size:14.5px;color:var(--muted);margin-top:6px;margin-bottom:24px}
+  .fform{display:flex;flex-direction:column;gap:16px}
+  .frow{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:460px){.frow{grid-template-columns:1fr}}
+  .field{display:flex;flex-direction:column;gap:7px}
+  .field label{font-size:13px;font-weight:700;color:var(--ink-soft)}
+  .field input,.field select,.field textarea{font-family:inherit;font-size:15.5px;color:var(--ink);background:var(--bg-alt);
+    border:1.5px solid var(--line-2);border-radius:12px;padding:13px 15px;width:100%;transition:border-color .14s,box-shadow .14s;-webkit-appearance:none}
+  .field textarea{resize:vertical;min-height:96px;line-height:1.6}
+  .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--brand-2);
+    box-shadow:0 0 0 4px color-mix(in srgb,var(--brand-2) 16%,transparent)}
+  .field select{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23828c99' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 15px center;padding-right:38px}
+  .fsubmit{margin-top:6px;border:none;cursor:pointer;background:var(--brand);color:#fff;font-family:inherit;
+    font-size:17px;font-weight:800;letter-spacing:-.01em;border-radius:999px;padding:16px 24px;width:100%;
+    transition:transform .14s,box-shadow .14s;box-shadow:0 10px 26px color-mix(in srgb,var(--brand) 38%,transparent)}
+  .fsubmit:hover{transform:translateY(-1px)}
+  .falt{text-align:center;font-size:13.5px;color:var(--muted);margin-top:14px}
+  .falt a{color:var(--brand-2);font-weight:700}
+  .fdone{display:none;text-align:center;padding:26px 10px}
+  .fdone.on{display:block}
+  .fdone .ck{width:56px;height:56px;border-radius:50%;background:var(--brand-tint);color:var(--brand);
+    display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 16px}
+  .fdone h3{font-size:20px;font-weight:850;color:var(--ink)}
+  .fdone p{font-size:15px;color:var(--ink-soft);margin-top:8px;line-height:1.6}
+
+  /* footer */
+  footer{background:var(--panel);color:#c3ccd8;padding:72px 0 44px;font-size:14.5px}
+  :root[data-theme="light"] footer{background:#0f141b}
+  footer .wrap{display:grid;grid-template-columns:1.7fr 1fr 1fr;gap:44px}
+  @media(max-width:760px){footer .wrap{grid-template-columns:1fr;gap:34px}}
+  footer .flogo{display:flex;align-items:center;gap:11px;margin-bottom:16px}
+  footer .flogo .wm{font-weight:900;font-size:27px;letter-spacing:-.03em;color:var(--brand);line-height:.9}
+  footer .flogo .tl{font-size:11.5px;font-weight:700;line-height:1.18;color:#cfd3da;letter-spacing:-.006em}
+  footer p{line-height:1.85;color:#93a0af}
+  footer h4{color:#f0f3f8;font-size:12.5px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:16px;font-weight:800}
+  footer .col a{display:block;padding:6px 0;color:#c3ccd8}
+  footer .col a:hover{color:#fff}
+  footer .base{border-top:1px solid rgba(255,255,255,.1);margin-top:48px;padding-top:24px;color:#818d9c;
+    display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px}
+  .todo{color:#e39350;border:1px dashed #e39350;border-radius:7px;padding:3px 10px;font-size:12px;font-weight:700}
+
+  @media(prefers-reduced-motion:no-preference){
+    .rv{opacity:0;transform:translateY(14px);animation:rise .7s cubic-bezier(.2,.7,.2,1) forwards}
+    .d2{animation-delay:.09s}.d3{animation-delay:.18s}
+    @keyframes rise{to{opacity:1;transform:none}}
+  }
+</style>
+
+<div class="seeg">
+  <!-- nav -->
+  <div class="nav">
+    <div class="wrap">
+      <a class="logo" href="#top" aria-label="SEEG — Software Engineering Expert Group">
+        <span class="wm">SEEG</span>
+        <span class="tl">Software Engineering<br>Expert Group</span>
+      </a>
+      <nav class="links">
+        <a href="#about">회사소개</a>
+        <a href="#services">서비스</a>
+        <a href="#solutions">솔루션</a>
+        <a href="#clients">고객·실적</a>
+        <a href="#academy">아카데미</a>
+      </nav>
+      <div class="right">
+        <a class="pill line" href="https://iamtai-seeg.github.io/seeg-diagnostic/index.html">성숙도 진단</a>
+        <a class="pill brand" href="#contact">상담 문의 →</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- hero -->
+  <header class="hero" id="top">
+    <div class="halo"></div>
+    <div class="wrap">
+      <div>
+        <div class="kick rv"><span class="b"></span>Software Engineering Expert Group</div>
+        <h1 class="rv d2">AI로 일하는 방식을,<br><span class="fade">다시 설계합니다.</span></h1>
+        <p class="lede rv d3">26년의 소프트웨어 공학으로, 개발 조직이 AI로 일하는 방식을 바꿉니다. 도구를 얹는 것이 아니라, 방식 자체를 설계합니다.</p>
+        <div class="row rv d3">
+          <a class="pill brand" href="#contact">상담 문의하기 →</a>
+          <a class="pill line" href="https://iamtai-seeg.github.io/seeg-diagnostic/index.html">1분 성숙도 진단</a>
+        </div>
+      </div>
+      <div class="hero-vis rv d3">
+        <svg viewBox="0 0 460 400" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="SEEG — AI를 중심으로 연결된 설계·전환·진단·교육">
+          <circle cx="230" cy="196" r="168" stroke="#2a2c31" stroke-width="1"/>
+          <circle cx="230" cy="196" r="120" stroke="#2a2c31" stroke-width="1"/>
+          <!-- spokes -->
+          <line x1="230" y1="196" x2="120" y2="86" stroke="#3a3d44" stroke-width="2"/>
+          <line x1="230" y1="196" x2="340" y2="86" stroke="#3a3d44" stroke-width="2"/>
+          <line x1="230" y1="196" x2="108" y2="320" stroke="#3a3d44" stroke-width="2"/>
+          <line x1="230" y1="196" x2="352" y2="320" stroke="#3a3d44" stroke-width="2"/>
+          <!-- perimeter -->
+          <line x1="120" y1="86" x2="340" y2="86" stroke="#26282d" stroke-width="1.4"/>
+          <line x1="108" y1="320" x2="352" y2="320" stroke="#26282d" stroke-width="1.4"/>
+          <line x1="120" y1="86" x2="108" y2="320" stroke="#26282d" stroke-width="1.4"/>
+          <line x1="340" y1="86" x2="352" y2="320" stroke="#26282d" stroke-width="1.4"/>
+          <!-- satellites -->
+          <line x1="120" y1="86" x2="58" y2="40" stroke="#1f2126" stroke-width="1.1"/>
+          <line x1="340" y1="86" x2="404" y2="44" stroke="#1f2126" stroke-width="1.1"/>
+          <line x1="108" y1="320" x2="46" y2="366" stroke="#1f2126" stroke-width="1.1"/>
+          <line x1="352" y1="320" x2="416" y2="366" stroke="#1f2126" stroke-width="1.1"/>
+          <circle cx="58" cy="40" r="10" fill="#1b1d21" stroke="#3a3d44" stroke-width="1.4"/>
+          <circle cx="404" cy="44" r="10" fill="#1b1d21" stroke="#3a3d44" stroke-width="1.4"/>
+          <circle cx="46" cy="366" r="9" fill="#1b1d21" stroke="#3a3d44" stroke-width="1.4"/>
+          <circle cx="416" cy="366" r="9" fill="#1b1d21" stroke="#3a3d44" stroke-width="1.4"/>
+          <!-- axis dots -->
+          <circle cx="158" cy="196" r="4.5" fill="#6e3033"/>
+          <circle cx="302" cy="196" r="4.5" fill="#6e3033"/>
+          <circle cx="230" cy="112" r="4.5" fill="#6e3033"/>
+          <circle cx="230" cy="280" r="4.5" fill="#6e3033"/>
+          <!-- primary nodes = 4 services -->
+          <circle cx="120" cy="86" r="34" fill="#1b1d21" stroke="#d81f27" stroke-width="2.4"/>
+          <text x="120" y="86" text-anchor="middle" dominant-baseline="central" fill="#eceef1" font-size="16" font-weight="700" font-family="'Apple SD Gothic Neo','Malgun Gothic',sans-serif">설계</text>
+          <circle cx="340" cy="86" r="34" fill="#1b1d21" stroke="#ec3b42" stroke-width="2.4"/>
+          <text x="340" y="86" text-anchor="middle" dominant-baseline="central" fill="#eceef1" font-size="16" font-weight="700" font-family="'Apple SD Gothic Neo','Malgun Gothic',sans-serif">전환</text>
+          <circle cx="108" cy="320" r="32" fill="#1b1d21" stroke="#ec3b42" stroke-width="2.4"/>
+          <text x="108" y="320" text-anchor="middle" dominant-baseline="central" fill="#eceef1" font-size="16" font-weight="700" font-family="'Apple SD Gothic Neo','Malgun Gothic',sans-serif">진단</text>
+          <circle cx="352" cy="320" r="32" fill="#1b1d21" stroke="#d81f27" stroke-width="2.4"/>
+          <text x="352" y="320" text-anchor="middle" dominant-baseline="central" fill="#eceef1" font-size="16" font-weight="700" font-family="'Apple SD Gothic Neo','Malgun Gothic',sans-serif">교육</text>
+          <!-- center AI -->
+          <circle cx="230" cy="196" r="52" fill="#241315" stroke="#d81f27" stroke-width="3.4"/>
+          <text x="230" y="196" text-anchor="middle" dominant-baseline="central" fill="#f0565c" font-size="30" font-weight="800" font-family="'Apple SD Gothic Neo','Malgun Gothic',sans-serif">AI</text>
+        </svg>
+        <div class="wm">SEEG · SOFTWARE ENGINEERING EXPERT GROUP</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- stats -->
+  <div class="strip">
+    <div class="wrap">
+      <div class="stat"><div class="n">26년+</div><div class="l">소프트웨어 공학 실무</div></div>
+      <div class="stat"><div class="n">15년+</div><div class="l">대학원 강의 (서강대·KAIST)</div></div>
+      <div class="stat"><div class="n">9개</div><div class="l">전문 커리큘럼 (Class 1–4·AX 5단계)</div></div>
+      <div class="stat"><div class="n">7차원</div><div class="l">조직 성숙도 진단</div></div>
+    </div>
+  </div>
+
+  <!-- about -->
+  <section class="about" id="about">
+    <div class="wrap">
+      <div class="grid">
+        <div>
+          <span class="eyebrow">About SEEG</span>
+          <h2>소프트웨어 공학을 아는 사람이, AI 시대의 조직을 설계합니다.</h2>
+          <p>대부분의 조직이 묻습니다. "AI 도구는 깔았는데, 왜 더 바빠졌는가."</p>
+          <p>SEEG는 그 질문에 도구가 아니라 <b>일하는 방식의 설계</b>로 답합니다. 26년의 소프트웨어 공학 경험 위에서, 사람이 판단하고 에이전트가 실행하는 조직을 만듭니다.</p>
+        </div>
+        <div class="quote">
+          <div class="big">사람이 판단하고,<br>에이전트가 실행한다.</div>
+          <div class="sub">SEEG 운영 원리</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- services -->
+  <section id="services">
+    <div class="wrap">
+      <div class="head">
+        <span class="eyebrow">Services</span>
+        <h2>필요한 네 가지를, 한 팀에서.</h2>
+        <p>설계하고, 전환하고, 측정하고, 가르칩니다. 각 서비스는 서로 이어집니다.</p>
+      </div>
+      <div class="cards">
+        <div class="card"><div class="no">01</div><h3>아키텍처 설계·재건</h3><p>요구사항에서 구조까지, 근거를 남기는 소프트웨어 아키텍처 설계. 레거시 시스템의 재건과 문서화.</p></div>
+        <div class="card"><div class="no">02</div><h3>AI 네이티브 전환</h3><p>개인과 팀의 AI 활용을 다섯 단계로. 프롬프트에서 자동화까지, 일하는 방식을 다시 설계합니다.</p></div>
+        <div class="card"><div class="no">03</div><h3>조직 성숙도 진단</h3><p>AI 네이티브 조직으로서의 성숙도를 측정하고, 가장 약한 곳(병목)과 다음 한 걸음을 짚습니다.</p></div>
+        <div class="card"><div class="no">04</div><h3>교육 · 강의</h3><p>실무 중심 커리큘럼으로 전환을 완성합니다. 아키텍처, AI 개발 조직 설계, 하니스·루프.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- solutions -->
+  <section class="sol" id="solutions">
+    <div class="wrap">
+      <div class="head">
+        <span class="eyebrow">Solutions</span>
+        <h2>조언이 아니라, 다시 쓰는 도구로 남깁니다.</h2>
+        <p>SEEG의 컨설팅은 진단 도구·전환 로드맵·커리큘럼으로 축적됩니다.</p>
+      </div>
+      <div class="solgrid">
+        <div class="item"><span class="k">Diagnostic</span><h3>성숙도 진단 도구</h3><p>조직의 현재 레벨과 병목을 숫자로 보여주는 자가 진단. 1분 개략, 정밀 진단 두 갈래.</p></div>
+        <div class="item"><span class="k">Roadmap</span><h3>AX 전환 5단계</h3><p>지금 어느 단계에 있고, 다음이 무엇인지. 전환의 길을 명확한 지도로 만듭니다.</p></div>
+        <div class="item"><span class="k">Curriculum</span><h3>실무 커리큘럼</h3><p>완성된 강의로 사내 교육에 바로 투입. 아키텍처부터 AI 개발 조직 설계까지.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 강의·자문 이력 -->
+  <section class="clients" id="clients">
+    <div class="wrap">
+      <div class="head">
+        <span class="eyebrow">Track Record</span>
+        <h2>대학원과 대기업이, 15년간 강단을 맡겼습니다.</h2>
+        <p>대표 김진태는 대학원 정규 강의부터 대기업 아키텍트 양성과정까지, 소프트웨어 공학을 오래 가르쳐 왔습니다.</p>
+      </div>
+      <div class="reftag">대학 · 연구·진흥기관</div>
+      <div class="logos five">
+        <div class="lslot on"><span class="lg"><img src="assets/logos/sogang.png" alt="서강대학교 로고" loading="lazy" decoding="async"></span><b>서강대학교</b><span class="sub">SE·프로젝트관리·구현방법론 · 2010–2026</span></div>
+        <div class="lslot on"><span class="lg"><img src="assets/logos/kaist.png" alt="KAIST 로고" loading="lazy" decoding="async"></span><b>KAIST</b><span class="sub">요구공학 · 2015–2022</span></div>
+        <div class="lslot on"><span class="lg"><img src="assets/logos/skku.png" alt="성균관대학교 로고" loading="lazy" decoding="async"></span><b>성균관대학교</b><span class="sub">소프트웨어공학</span></div>
+        <div class="lslot on"><span class="lg"><img src="assets/logos/nipa.png" alt="NIPA 로고" loading="lazy" decoding="async"></span><b>NIPA</b><span class="sub">정보통신산업진흥원</span></div>
+        <div class="lslot on"><span class="lg"><img src="assets/logos/jeonju.png" alt="전주정보문화산업진흥원 로고" loading="lazy" decoding="async"></span><b>전주정보문화산업진흥원</b><span class="sub">AX 전환 방법과 사례 · 제주 2026.6</span></div>
+      </div>
+      <div class="reftag">기업 아키텍트·SW공학 양성</div>
+      <div class="logos">
+        <div class="lslot on"><span class="lg"><img src="assets/logos/samsung.png" alt="삼성전자 로고" loading="lazy" decoding="async"></span><b>삼성전자</b><span class="sub">아키텍트 양성과정 · 2020–2023</span></div>
+        <div class="lslot on"><span class="lg"><img src="assets/logos/lg.png" alt="LG전자 · LG CNS 로고" loading="lazy" decoding="async"></span><b>LG전자 · LG CNS</b><span class="sub">아키텍트·코드 구현</span></div>
+        <div class="lslot on"><span class="lg"><img src="assets/logos/mobis.png" alt="현대모비스 로고" loading="lazy" decoding="async"></span><b>현대모비스</b><span class="sub">클린코드</span></div>
+        <div class="lslot on"><span class="lg"><img src="assets/logos/hancom.png" alt="한글과컴퓨터 로고" loading="lazy" decoding="async"></span><b>한글과컴퓨터</b><span class="sub">클린코드·SW공학</span></div>
+      </div>
+      <p class="note">※ 각 기관의 강의·자문 이력에 근거한 로고입니다. 대외 게시 범위는 개별 협의합니다.</p>
+    </div>
+  </section>
+
+  <!-- academy -->
+  <section class="about" id="academy" style="border-bottom:none">
+    <div class="wrap">
+      <div class="head">
+        <span class="eyebrow">Academy · 커리큘럼</span>
+        <h2>가르칠 수 있는 것을, 그대로 제공합니다.</h2>
+        <p>AI 시대의 개발 조직을 위한 정규 커리큘럼입니다. 사내 교육·워크샵으로 바로 투입할 수 있습니다.</p>
+      </div>
+
+      <div class="reftag">AI 개발 조직 시리즈 · Class 1–4</div>
+      <div class="courses">
+        <div class="course"><div class="top">Class 1 · 인프런 개설</div><h3>AI 시대 SW 조직 설계 원칙</h3><p>역할 재정의, 팀 구조, 채용 기준, 성장 경로, 성과 측정까지 — 개발 조직을 다시 설계합니다. (10개 모듈)</p></div>
+        <div class="course"><div class="top">Class 2</div><h3>AI 시대의 아키텍처</h3><p>아키텍트 역할 재정의, RAG·Agent 아키텍처, 거버넌스, 기술부채, ADR 현대화. (심화)</p></div>
+        <div class="course"><div class="top">Class 3</div><h3>품질과 운영</h3><p>Evaluation 기준 설계, 코드리뷰 품질 게이트, Observability, 프로덕션 사고 사후분석.</p></div>
+        <div class="course"><div class="top">Class 4</div><h3>AI 제품과 PM</h3><p>LLM 제품의 다섯 가지 특성, AI PRD 작성법, 성공 지표 설계, 사용자 스토리와 엣지 케이스.</p></div>
+      </div>
+
+      <div class="reftag" style="margin-top:38px">AX 전환 5단계 · L1–L5</div>
+      <div class="axline">
+        <div class="ax"><span class="lv">L1</span>프롬프트</div>
+        <div class="ax"><span class="lv">L2</span>업무 자동화</div>
+        <div class="ax"><span class="lv">L3</span>바이브코딩</div>
+        <div class="ax"><span class="lv">L4</span>하니스 엔지니어링</div>
+        <div class="ax"><span class="lv">L5</span>루프 엔지니어링</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 상담 문의 = 리드 창구 (페이지의 주인공) ===== -->
+  <section class="lead" id="contact" style="padding:0">
+    <div class="wrap">
+      <div>
+        <span class="eyebrow">Talk to us · 상담 문의</span>
+        <h2>프로젝트를 논의합시다.</h2>
+        <p class="sub">무엇을 만들고 계신지, 어디서 막혀 있는지 알려주세요. 소프트웨어 공학 26년이 함께 봅니다.</p>
+        <div class="trust">
+          <div class="t"><span class="c">✓</span>영업일 <b>1일 이내</b> 직접 회신</div>
+          <div class="t"><span class="c">✓</span>초기 상담은 <b>무료</b>입니다</div>
+          <div class="t"><span class="c">✓</span>보내주신 내용은 <b>비밀로</b> 지켜집니다</div>
+        </div>
+      </div>
+
+      <div class="formcard">
+        <form class="fform" id="leadForm" novalidate>
+          <div class="fc-h">상담 요청 보내기</div>
+          <div class="fc-s">아래 내용을 남겨주시면 대표가 직접 연락드립니다.</div>
+          <div class="frow">
+            <div class="field"><label for="lf-name">이름</label><input id="lf-name" name="name" type="text" placeholder="홍길동" required></div>
+            <div class="field"><label for="lf-org">회사 · 조직</label><input id="lf-org" name="org" type="text" placeholder="회사명"></div>
+          </div>
+          <div class="field"><label for="lf-email">이메일</label><input id="lf-email" name="email" type="email" placeholder="you@company.com" required></div>
+          <div class="field"><label for="lf-type">무엇을 도와드릴까요?</label>
+            <select id="lf-type" name="type">
+              <option value="">선택해주세요</option>
+              <option>소프트웨어 아키텍처 설계·재건</option>
+              <option>AI 네이티브 전환(AX)</option>
+              <option>조직 성숙도 진단</option>
+              <option>교육·강의</option>
+              <option>아직 잘 모르겠습니다 · 상담부터</option>
+            </select>
+          </div>
+          <div class="field"><label for="lf-msg">문의 내용</label><textarea id="lf-msg" name="message" placeholder="지금 겪고 계신 문제나 논의하고 싶은 내용을 자유롭게 적어주세요."></textarea></div>
+          <button class="fsubmit" type="submit">상담 요청 보내기 →</button>
+          <div class="falt">간단히 시작하고 싶으시면 <a href="https://iamtai-seeg.github.io/seeg-diagnostic/index.html">1분 성숙도 진단 →</a></div>
+        </form>
+        <div class="fdone" id="leadDone">
+          <div class="ck">✓</div>
+          <h3>요청이 접수되었습니다.</h3>
+          <p>영업일 1일 이내에 대표가 직접 연락드리겠습니다.<br>감사합니다.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- footer -->
+  <footer id="site-footer">
+    <div class="wrap">
+      <div>
+        <div class="flogo">
+          <span class="wm">SEEG</span>
+          <span class="tl">Software Engineering<br>Expert Group</span>
+        </div>
+        <p>소프트웨어공학엑스퍼트그룹<br><br><span class="todo">[대표 확인] 사업자등록번호 · 주소 · 연락처</span></p>
+      </div>
+      <div class="col">
+        <h4>서비스</h4>
+        <a href="#services">아키텍처 설계·재건</a>
+        <a href="#services">AI 네이티브 전환</a>
+        <a href="#services">조직 성숙도 진단</a>
+        <a href="#academy">교육·아카데미</a>
+      </div>
+      <div class="col">
+        <h4>바로가기</h4>
+        <a href="https://iamtai-seeg.github.io/seeg-diagnostic/index.html">성숙도 진단</a>
+        <a href="https://forms.gle/mZUBrat91PuPUXaj7">상담 문의</a>
+        <a href="#clients">고객·실적</a>
+      </div>
+    </div>
+    <div class="wrap base">
+      <span>© 2026 SEEG. All rights reserved.</span>
+      <span class="todo">DRAFT v4 · 내부 검토용</span>
+    </div>
+  </footer>
+
+  <script>
+    (function(){
+      // 진단 도구와 동일한 Apps Script 백엔드. 상담 문의는 type:"inquiry"로 분리 저장 + 대표 메일 알림.
+      var ENDPOINT="https://script.google.com/macros/s/AKfycbzL-3SP87_ljbtRBTekSUrpIz1xTK_rNSM0xKycRCOxK0Nith8c9wPme-LzuHPralcP/exec";
+      var f=document.getElementById('leadForm'), done=document.getElementById('leadDone');
+      if(!f) return;
+      var btn=f.querySelector('.fsubmit'), alt=f.querySelector('.falt');
+      var el=function(id){return document.getElementById(id);};
+      function showDone(){ f.style.display='none'; done.classList.add('on'); done.scrollIntoView({behavior:'smooth',block:'center'}); }
+      // 미리보기(아티팩트/로컬)에서는 외부 전송이 차단되므로 UX만 시연. 실제 도메인에서는 백엔드로 전송.
+      var PREVIEW=/claude\.ai|usercontent|localhost|127\.0\.0\.1/.test(location.hostname);
+      f.addEventListener('submit',function(e){
+        e.preventDefault();
+        var name=el('lf-name'), email=el('lf-email');
+        name.style.borderColor=''; email.style.borderColor='';
+        if(!name.value.trim()){name.focus();name.style.borderColor='#d64545';return;}
+        if(!email.value.trim()||email.value.indexOf('@')<1){email.focus();email.style.borderColor='#d64545';return;}
+        var payload={type:"inquiry",name:name.value.trim(),org:el('lf-org').value.trim(),
+          email:email.value.trim(),inquiryType:el('lf-type').value,message:el('lf-msg').value.trim(),source:"homepage"};
+        if(PREVIEW){ showDone(); return; } // 미리보기 시연
+        btn.disabled=true; btn.textContent="보내는 중…";
+        fetch(ENDPOINT,{method:"POST",body:JSON.stringify(payload)})   // text/plain simple request → CORS 프리플라이트 없음
+          .then(function(r){return r.json();})
+          .then(function(res){ if(res&&res.ok){ showDone(); } else { throw new Error((res&&res.error)||"fail"); } })
+          .catch(function(){ // 리드 유실 방지: 실패 시 대체 창구 안내
+            btn.disabled=false; btn.textContent="상담 요청 보내기 →";
+            alt.innerHTML='전송에 문제가 있었습니다. <a href="https://forms.gle/mZUBrat91PuPUXaj7">문의 폼으로 남겨주세요 →</a>';
+          });
+      });
+    })();
+  </script>
+</div>
+</body>
+</html>
